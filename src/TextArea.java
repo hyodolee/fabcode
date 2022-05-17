@@ -104,18 +104,40 @@ public class TextArea extends JFrame implements KeyListener, ActionListener {
 		
 		List<String> outList = Arrays.asList(change_target);
 		
+		ta2.setText("");
+		
 		for (String fabUseCode : outList) {
-			//공백제거
+			//getFabUseYN() 존재하는지 체크
+			String pattern = ".{0,9999}getFabUseYN.{0,9999}";
+			System.out.println(fabUseCode.matches(pattern));
+			if(fabUseCode.matches(pattern) == false){
+				continue;
+			}
 			
-			// fabUseCode = fabUseCode.replaceAll("(^\\p{Z}+|\\p{Z}+$)", "");
+			//_와 # 사이에 문자열 껴있는지 체크
+			String pattern2 = ".*_.#.*";
+			System.out.println(fabUseCode.matches(pattern2));
+			if(fabUseCode.matches(pattern2)){
+				continue;
+			}
+			
 			
 			//중복체크
 			
 			//주석 체크
-			System.out.println(fabUseCode.trim().substring(0, 2).equals("//"));
+			// System.out.println(fabUseCode.trim().substring(0, 2).equals("//"));
+			
+			//System.out.println("if(getComTrx().getFabUseYN(\"mes_#12345\",doc))".matches(pattern));
+			//System.out.println("if(getComTrx().getFabUseYn(\"mes_#12345\",doc))".matches(pattern));
+
+			//FabUseYN 추출
+			int firstIndex = fabUseCode.indexOf(".getFabUseYN(") + 14;
+			int lastIndex = fabUseCode.indexOf("\"", firstIndex); 
+			ta2.append(fabUseCode.substring(firstIndex, lastIndex));
+			ta2.append("\n");
 		}
 		
-		ta2.setText(outList.get(1));
+		//ta2.setText(outList.get(1));
 //		String words[] =text.split("\\s");
 //		lb1.setText("단어 :" + words.length);
 //		lb2.setText("문자 :" + text.length());
