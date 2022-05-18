@@ -4,8 +4,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -29,6 +32,13 @@ public class TextArea extends JFrame implements KeyListener, ActionListener {
 	private JButton btn;
 	
 	private int count = 0;
+	
+	private int firstIndex = 0;
+	private int lastIndex = 0;
+	
+	private List<String> fabCodeList = new ArrayList<String>();
+	
+	boolean isN_MES = false;
 
 	public TextArea() {
 
@@ -105,37 +115,75 @@ public class TextArea extends JFrame implements KeyListener, ActionListener {
 		List<String> outList = Arrays.asList(change_target);
 		
 		ta2.setText("");
+		fabCodeList.clear();
+		isN_MES = false;
 		
 		for (String fabUseCode : outList) {
+			//N_MES 로 이미 진행한 메소드 존재하는지 체크
+			String pattern_N_MES = "^.*N_MES.*";
+			if(fabUseCode.matches(pattern_N_MES)){
+				isN_MES = true;
+			}
+			
 			//getFabUseYN() 존재하는지 체크
-			String pattern = ".{0,9999}getFabUseYN.{0,9999}";
+			String pattern = "^.*getFabUseYN.*";
 			System.out.println(fabUseCode.matches(pattern));
 			if(fabUseCode.matches(pattern) == false){
 				continue;
 			}
-			
-			//_와 # 사이에 문자열 껴있는지 체크
-			String pattern2 = ".*_.#.*";
-			System.out.println(fabUseCode.matches(pattern2));
-			if(fabUseCode.matches(pattern2)){
+						
+			//주석 체크
+			if(fabUseCode.trim().substring(0, 2).equals("//")
+				|| fabUseCode.trim().substring(0, 2).equals("/*")
+				|| fabUseCode.trim().substring(0, 2).equals("*/")
+				|| fabUseCode.trim().substring(0, 1).equals("*")) {
 				continue;
 			}
-			
-			
-			//중복체크
-			
-			//주석 체크
-			// System.out.println(fabUseCode.trim().substring(0, 2).equals("//"));
 			
 			//System.out.println("if(getComTrx().getFabUseYN(\"mes_#12345\",doc))".matches(pattern));
 			//System.out.println("if(getComTrx().getFabUseYn(\"mes_#12345\",doc))".matches(pattern));
 
 			//FabUseYN 추출
-			int firstIndex = fabUseCode.indexOf(".getFabUseYN(") + 14;
-			int lastIndex = fabUseCode.indexOf("\"", firstIndex); 
-			ta2.append(fabUseCode.substring(firstIndex, lastIndex));
+			List<Integer> indexes = findIndexes(".getFabUseYN(",fabUseCode);
+			
+			String fabUseYNCode = "";
+			
+			if(indexes.size() > 0) {
+				firstIndex = 0;
+				lastIndex =0;
+				
+				for (int fabUseIndex : indexes) {
+					// fabUseYNCode 추출
+					firstIndex = fabUseIndex + 14;
+					int lastIndex = fabUseCode.indexOf("\"", firstIndex); 
+					fabUseYNCode = fabUseCode.substring(firstIndex, lastIndex);
+					
+					//_와 # 사이에 문자열 껴있는지 체크
+					String pattern2 = ".*_.#.*";
+					
+					if(fabUseYNCode.matches(pattern2)){
+						continue;
+					}
+
+					// 문자열 안껴있으면 출력
+					// ta2.append(fabUseYNCode);
+					// ta2.append("\n");
+					
+					fabCodeList.add(fabUseYNCode);
+				}
+			}
+		}
+		
+		// 중복 제거 위해 Set List 순으로 변경후 출력
+		Set<String> set = new HashSet<String>(fabCodeList);
+		List<String> resultFabCodes = new ArrayList<String>(set);
+		
+		for (String fabUse : resultFabCodes) {
+			ta2.append(fabUse);
 			ta2.append("\n");
 		}
+		
+		if(isN_MES) {ta2.append("N_MES 존재");}
 		
 		//ta2.setText(outList.get(1));
 //		String words[] =text.split("\\s");
@@ -143,5 +191,18 @@ public class TextArea extends JFrame implements KeyListener, ActionListener {
 //		lb2.setText("문자 :" + text.length());
 		
 		//System.out.println(text);
+	}
+	
+	public List<Integer> findIndexes(String word, String document) { 
+		List<Integer> indexList = new ArrayList<Integer> (); 
+		
+		int index = document.indexOf(word); 
+		
+		while(index != -1) { 
+			indexList.add(index); 
+			index = document.indexOf(word, index+word.length()); 
+		}
+		
+		return indexList; 
 	}
 }
